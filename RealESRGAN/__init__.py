@@ -1,7 +1,9 @@
-from .model import RealESRGAN
+from .model import RealESRGAN  # Import the class
 
-"""
-__init__.py for the RealESRGAN module.
+__all__ = ["RealESRGAN"]  # Set what gets imported when using `import RealESRGAN`
 
-This module provides the Real-ESRGAN model for image super-resolution.
-"""
+# Define a direct alias for instantiation
+def __getattr__(name):
+    if name == "RealESRGAN":
+        return RealESRGAN
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
