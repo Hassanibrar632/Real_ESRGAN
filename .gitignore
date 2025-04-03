@@ -1,1 +1,2 @@
 *.pth
+/RealESRGAN/__pycache__
