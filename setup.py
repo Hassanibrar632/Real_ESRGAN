@@ -5,14 +5,14 @@ with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
 setup(
-    name='RealESRGAN',
-    py_modules=["RealESRGAN"],
+    name='Real_ESRGAN',
+    py_modules=["Real_ESRGAN"],
     version='1.0.0',
     description='Real-ESRGAN: Practical Algorithms for General Image Restoration. This is an unofficial implementation of Real-ESRGAN',
     author='M. Hassan Ibrar',
     author_email='hassanibrar632@gmail.com',
-    url='https://github.com/Hassanibrar632/ESRGAN',
-    packages=find_packages(include=['RealESRGAN']),
+    url='https://github.com/Hassanibrar632/Real_ESRGAN',
+    packages=find_packages(include=['Real_ESRGAN']),
     install_requires=requirements,
     classifiers=[
         'Programming Language :: Python :: 3',

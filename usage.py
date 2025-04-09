@@ -1,5 +1,5 @@
 # importing Libraries
-from RealESRGAN.model import RealESRGAN
+from Real_ESRGAN.model import RealESRGAN
 from PIL import Image
 import torch
 
