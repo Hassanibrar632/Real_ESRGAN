@@ -1,4 +1,5 @@
 # import libraries
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from huggingface_hub import hf_hub_url, hf_hub_download
 from torch.nn import functional as F
 from PIL import Image
@@ -146,28 +147,38 @@ class RealESRGAN:
 
         return sr_img
     
-    def process_video(self, video_path, output_path, ffmpeg_bin='ffmpeg', batch_size=4, patches_size=192,padding=24, pad_size=15):
+    def __process_frame(self, tupled_input):
+        idx, frame = tupled_input
+        return idx, self.predict(frame, self.batch_size, self.patches_size, self.padding, self.pad_size, 'video')
+    
+    def process_video(self, input_path, output_path, max_workers=2, ffmpeg_bin='ffmpeg', batch_size=4, patches_size=192, padding=24, pad_size=15):
         """
         upscale the video using the RealESRGAN.
         Args:
-        1. video_path: path to the video
+        1. input_path: path to the video
         2. output_path: where do you want to save the video
-        3. ffmpeg_bin: 'ffmpeg' if added to path or path to the ffmpeg bin
-        4. batch_size: default=4
-        5. patches_size: default=192
-        6. padding: default=24
-        7. pad_size: default=15
+        3. max_workers: default=2 how many processes should run side by side to speedup the inferencing process.
+        4. ffmpeg_bin: 'ffmpeg' if added to path or path to the ffmpeg bin
+        5. batch_size: default=4
+        6. patches_size: default=192
+        7. padding: default=24
+        8. pad_size: default=15
 
         Return: success(boolean), output_video_path
         """
+        # Setup the values in the self
+        self.batch_size=batch_size
+        self.patches_size=patches_size
+        self.padding=padding
+        self.pad_size=pad_size
+
         # success flag
         success = True
 
         # Extract full_path from the relative paths to avoid any errors
-        video_path = os.path.abspath(video_path)
+        input_path = os.path.abspath(input_path)
         output_path = os.path.abspath(output_path)
-        print(video_name, output_path)
-
+        print("Video path: ", input_path, "\nOutput path: ", output_path)
 
         # Make an output folder
         os.makedirs(output_path, exist_ok=True)
@@ -188,7 +199,7 @@ class RealESRGAN:
         audio = reader.get_audio()
         height, width = reader.get_resolution()
         fps = reader.get_fps()
-        writer = Writer(self.outscale, video_save_path, fps, width, height)
+        writer = Writer(self.scale, video_save_path, fps, width, height)
         print("Video Reading and Writing Initialized")
 
         # Load the model to cuda if avilabe:
@@ -196,21 +207,31 @@ class RealESRGAN:
             self.model.to(self.device)
             print('model moved to cuda')
 
-        # Process the video
+        # Initilize the parameters for the workers
         print('Start video inference...')
+        results = [None]*len(reader)
+        futures = {}
         pbar = tqdm(total=len(reader), unit='frame', desc='inference')
-        while True:
-            img = reader.get_frame()
-            if img is None:
-                break
-            try:
-                output = self.predict(img, batch_size, patches_size, padding, pad_size, mode='video')
-            except RuntimeError as error:
-                success = False
-                break
-            else:
-                writer.write_frame(output)
-            pbar.update(1)
+
+        # Process the video with the wokers
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # create process for the worker using reader
+            for idx in range(len)(reader):
+                img = reader.get_frame()
+                if img is None:
+                    print("All the imaegs are reead.")
+                    break
+
+                # assign the work to the worker
+                future = executor.submit(self.__process_frame, (idx, img))
+                futures[future] = idx
+            # Gather the results from the 
+            for future in as_completed(futures):
+                idx, output = future.result()
+                results[idx] = output
+                pbar.update(1)
+        for output in results:
+            writer.write_frame(np.array(output))
 
         # unload the model from cuda
         if self.device == 'cuda':
