@@ -216,7 +216,7 @@ class RealESRGAN:
         # Process the video with the wokers
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # create process for the worker using reader
-            for idx in range(len)(reader):
+            for idx in range(len(reader)):
                 img = reader.get_frame()
                 if img is None:
                     print("All the imaegs are reead.")
