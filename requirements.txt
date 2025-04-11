@@ -3,3 +3,4 @@ numpy
 pillow
 huggingface_hub
 opencv-python
+ffmpeg-python
