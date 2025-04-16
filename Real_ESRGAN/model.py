@@ -100,8 +100,13 @@ class RealESRGAN:
         Return: pillow formate image
         """
         
+        if lr_image is None:
+            print("Input Image can not be none, check the image type before upscaling.")
+            return None
+        
         # load the model to cuda
         if mode == 'image' and self.device == 'cuda':
+            print("Loading model to GPU")
             self.model.to(self.device)
 
         # extract parameters from the class
@@ -143,6 +148,7 @@ class RealESRGAN:
         
         # unload the model to cpu if it was a image mode to freeup space
         if mode == 'image' and self.device == 'cuda':
+            print("unloading the model from GPU")
             self.model.to('cpu')
 
         return sr_img
@@ -166,6 +172,12 @@ class RealESRGAN:
 
         Return: success(boolean), output_video_path
         """
+        if os.path.exists(input_path):
+            print("Input video found")
+        else:
+            print("unable to fins the input video, exiting")
+            return False, None
+
         # Setup the values in the self
         self.batch_size=batch_size
         self.patches_size=patches_size
